@@ -1,4 +1,4 @@
-package getit
+package getit //nolint:testpackage
 
 import (
 	"context"

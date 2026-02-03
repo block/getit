@@ -14,7 +14,7 @@ type TAR struct{}
 
 var _ Resolver = (*TAR)(nil)
 
-func NewTar() *TAR { return &TAR{} }
+func NewTAR() *TAR { return &TAR{} }
 
 var tarRe = regexp.MustCompile(`(\.tar(\.[a-z]+)?)|(\.tbz|\.tbz2|\.txz|\.tzstd|\.tlz|\.tZ|\.tgz)`)
 
@@ -23,7 +23,7 @@ func (t *TAR) Match(source *url.URL) bool {
 }
 
 func (t *TAR) Fetch(ctx context.Context, source Source, dest string) error {
-	if err := os.MkdirAll(dest, 0755); err != nil {
+	if err := os.MkdirAll(dest, 0750); err != nil {
 		return fmt.Errorf("creating destination directory: %w", err)
 	}
 	args := []string{"-x", "-C", dest}

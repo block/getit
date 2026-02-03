@@ -1,4 +1,4 @@
-package getit
+package getit //nolint:testpackage
 
 import (
 	"context"
@@ -41,7 +41,7 @@ func TestTARMatch(t *testing.T) {
 		{name: "EmptyPath", path: "", expected: false},
 	}
 
-	tar := NewTar()
+	tar := NewTAR()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &url.URL{Path: tt.path}
@@ -100,7 +100,7 @@ func TestTARFetch(t *testing.T) {
 			data, err := os.ReadFile(filepath.Join("testdata", tt.filename))
 			assert.NoError(t, err)
 
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write(data)
 			}))
@@ -110,7 +110,7 @@ func TestTARFetch(t *testing.T) {
 			assert.NoError(t, err)
 
 			dest := t.TempDir()
-			tar := NewTar()
+			tar := NewTAR()
 			err = tar.Fetch(context.Background(), Source{URL: u}, dest)
 			assert.NoError(t, err)
 
@@ -126,7 +126,7 @@ func TestTARFetch(t *testing.T) {
 }
 
 func TestTARFetchHTTPError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer server.Close()
@@ -135,14 +135,14 @@ func TestTARFetchHTTPError(t *testing.T) {
 	assert.NoError(t, err)
 
 	dest := t.TempDir()
-	tar := NewTar()
+	tar := NewTAR()
 	err = tar.Fetch(context.Background(), Source{URL: u}, dest)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "404")
 }
 
 func TestTARFetchInvalidTarball(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("not a valid tarball"))
 	}))
@@ -152,13 +152,13 @@ func TestTARFetchInvalidTarball(t *testing.T) {
 	assert.NoError(t, err)
 
 	dest := t.TempDir()
-	tar := NewTar()
+	tar := NewTAR()
 	err = tar.Fetch(context.Background(), Source{URL: u}, dest)
 	assert.Error(t, err)
 }
 
 func TestTARFetchCancelledContext(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("data"))
 	}))
@@ -171,7 +171,7 @@ func TestTARFetchCancelledContext(t *testing.T) {
 	cancel()
 
 	dest := t.TempDir()
-	tar := NewTar()
+	tar := NewTAR()
 	err = tar.Fetch(ctx, Source{URL: u}, dest)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "context canceled")

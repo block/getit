@@ -25,7 +25,7 @@ func (z *ZIP) Match(source *url.URL) bool {
 }
 
 func (z *ZIP) Fetch(ctx context.Context, source Source, dest string) error {
-	if err := os.MkdirAll(dest, 0755); err != nil {
+	if err := os.MkdirAll(dest, 0750); err != nil {
 		return fmt.Errorf("creating destination directory: %w", err)
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, source.URL.String(), nil)
@@ -57,7 +57,7 @@ func (z *ZIP) Fetch(ctx context.Context, source Source, dest string) error {
 
 	// Unzip
 	stderr := &bytes.Buffer{}
-	cmd := exec.CommandContext(ctx, "unzip", "-d", dest, zip.Name())
+	cmd := exec.CommandContext(ctx, "unzip", "-d", dest, zip.Name()) // #nosec G204
 	cmd.Stderr = stderr
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("unzip %s: %w: %s", zip.Name(), err, stderr)

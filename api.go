@@ -90,7 +90,10 @@ func (f *Fetcher) Fetch(ctx context.Context, source, dest string) error {
 	if err != nil {
 		return err
 	}
-	return src.Fetch(ctx, u, dest)
+	if err := src.Fetch(ctx, u, dest); err != nil {
+		return fmt.Errorf("fetching %s: %w", source, err)
+	}
+	return nil
 }
 
 // FetchIntoPipe retrieves the given URL using Go's HTTP library then pipes it into the input of the given command.

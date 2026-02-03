@@ -1,4 +1,4 @@
-package getit
+package getit_test
 
 import (
 	"context"
@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
+
+	"github.com/block/getit"
 )
 
 func TestZIPMatch(t *testing.T) {
@@ -29,7 +31,7 @@ func TestZIPMatch(t *testing.T) {
 		{name: "EmptyPath", path: "", expected: false},
 	}
 
-	zip := NewZIP()
+	zip := getit.NewZIP()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &url.URL{Path: tt.path}
@@ -43,7 +45,7 @@ func TestZIPFetch(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("testdata", "archive.zip"))
 	assert.NoError(t, err)
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(data)
 	}))
@@ -53,8 +55,8 @@ func TestZIPFetch(t *testing.T) {
 	assert.NoError(t, err)
 
 	dest := t.TempDir()
-	zip := NewZIP()
-	err = zip.Fetch(context.Background(), Source{URL: u}, dest)
+	zip := getit.NewZIP()
+	err = zip.Fetch(context.Background(), getit.Source{URL: u}, dest)
 	assert.NoError(t, err)
 
 	content, err := os.ReadFile(filepath.Join(dest, "file.txt"))
@@ -67,7 +69,7 @@ func TestZIPFetch(t *testing.T) {
 }
 
 func TestZIPFetchHTTPError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer server.Close()
@@ -76,14 +78,14 @@ func TestZIPFetchHTTPError(t *testing.T) {
 	assert.NoError(t, err)
 
 	dest := t.TempDir()
-	zip := NewZIP()
-	err = zip.Fetch(context.Background(), Source{URL: u}, dest)
+	zip := getit.NewZIP()
+	err = zip.Fetch(context.Background(), getit.Source{URL: u}, dest)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "404")
 }
 
 func TestZIPFetchInvalidZip(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("not a valid zip file"))
 	}))
@@ -93,13 +95,13 @@ func TestZIPFetchInvalidZip(t *testing.T) {
 	assert.NoError(t, err)
 
 	dest := t.TempDir()
-	zip := NewZIP()
-	err = zip.Fetch(context.Background(), Source{URL: u}, dest)
+	zip := getit.NewZIP()
+	err = zip.Fetch(context.Background(), getit.Source{URL: u}, dest)
 	assert.Error(t, err)
 }
 
 func TestZIPFetchCancelledContext(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("data"))
 	}))
@@ -112,8 +114,8 @@ func TestZIPFetchCancelledContext(t *testing.T) {
 	cancel()
 
 	dest := t.TempDir()
-	zip := NewZIP()
-	err = zip.Fetch(ctx, Source{URL: u}, dest)
+	zip := getit.NewZIP()
+	err = zip.Fetch(ctx, getit.Source{URL: u}, dest)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "context canceled")
 }

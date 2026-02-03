@@ -1,4 +1,4 @@
-package getit
+package getit_test
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
+
+	"github.com/block/getit"
 )
 
 func TestFetchIntoPipe(t *testing.T) {
@@ -21,7 +23,7 @@ func TestFetchIntoPipe(t *testing.T) {
 	}{
 		{
 			name: "SuccessfulFetch",
-			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+			serverHandler: func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte("hello world"))
 			},
@@ -30,7 +32,7 @@ func TestFetchIntoPipe(t *testing.T) {
 		},
 		{
 			name: "SuccessfulFetchWithArgs",
-			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+			serverHandler: func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte("line1\nline2\nline3"))
 			},
@@ -39,7 +41,7 @@ func TestFetchIntoPipe(t *testing.T) {
 		},
 		{
 			name: "HTTPNotFound",
-			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+			serverHandler: func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusNotFound)
 			},
 			cmd:         "cat",
@@ -47,7 +49,7 @@ func TestFetchIntoPipe(t *testing.T) {
 		},
 		{
 			name: "HTTPInternalServerError",
-			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+			serverHandler: func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusInternalServerError)
 			},
 			cmd:         "cat",
@@ -55,7 +57,7 @@ func TestFetchIntoPipe(t *testing.T) {
 		},
 		{
 			name: "CommandNotFound",
-			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+			serverHandler: func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte("data"))
 			},
@@ -64,7 +66,7 @@ func TestFetchIntoPipe(t *testing.T) {
 		},
 		{
 			name: "CommandFails",
-			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+			serverHandler: func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte("data"))
 			},
@@ -73,7 +75,7 @@ func TestFetchIntoPipe(t *testing.T) {
 		},
 		{
 			name: "CancelledContext",
-			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+			serverHandler: func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte("data"))
 			},
@@ -98,7 +100,7 @@ func TestFetchIntoPipe(t *testing.T) {
 				cancel()
 			}
 
-			err = FetchIntoPipe(ctx, u, tt.cmd, tt.args...)
+			err = getit.FetchIntoPipe(ctx, u, tt.cmd, tt.args...)
 
 			if tt.expectedErr != "" {
 				assert.Error(t, err)
@@ -113,7 +115,7 @@ func TestFetchIntoPipe(t *testing.T) {
 func TestFetchIntoPipeInvalidURL(t *testing.T) {
 	ctx := context.Background()
 	u := &url.URL{Scheme: "http", Host: "localhost:99999"}
-	err := FetchIntoPipe(ctx, u, "cat")
+	err := getit.FetchIntoPipe(ctx, u, "cat")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "fetching")
 }

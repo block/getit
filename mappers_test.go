@@ -1,9 +1,11 @@
-package getit
+package getit_test
 
 import (
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
+
+	"github.com/block/getit"
 )
 
 func TestGitHub(t *testing.T) {
@@ -64,7 +66,7 @@ func TestGitHub(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, ok := GitHub(tt.source)
+			result, ok := getit.GitHub(tt.source)
 			assert.Equal(t, tt.ok, ok)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -137,7 +139,7 @@ func TestGitHubOrgRepo(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, ok := GitHubOrgRepo(tt.source)
+			result, ok := getit.GitHubOrgRepo(tt.source)
 			assert.Equal(t, tt.ok, ok)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -217,7 +219,7 @@ func TestSingleGitHubOrg(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mapper := SingleGitHubOrg(tt.org)
+			mapper := getit.SingleGitHubOrg(tt.org)
 			result, ok := mapper(tt.source)
 			assert.Equal(t, tt.ok, ok)
 			assert.Equal(t, tt.expected, result)
