@@ -69,7 +69,13 @@ func (f *Fetcher) Resolve(source string) (Resolver, Source, error) {
 		if !resolver.Match(u) {
 			continue
 		}
-		_, subdir, _ := strings.Cut(u.Path, "//")
+		base, subdir, ok := strings.Cut(u.Path, "//")
+		if ok {
+			// Strip subdir, if any
+			nu := *u
+			nu.Path = base
+			u = &nu
+		}
 		return resolver, Source{
 			URL:    u,
 			SubDir: subdir,

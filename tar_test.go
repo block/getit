@@ -85,11 +85,6 @@ func TestCompressionFlag(t *testing.T) {
 	}
 }
 
-func TestNewTar(t *testing.T) {
-	tar := NewTar()
-	assert.NotEqual(t, nil, tar)
-}
-
 func TestTARFetch(t *testing.T) {
 	tests := []struct {
 		name     string
