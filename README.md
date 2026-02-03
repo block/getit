@@ -13,13 +13,13 @@ This is a bit like hashicorp/go-getter, but much simpler, and with less supporte
 ## Usage
 
 ```go
-import "github.com/alecthomas/getit"
+import "github.com/block/getit"
 
 // Create a fetcher with resolvers and mappers
 fetcher := getit.New(
     []getit.Resolver{
         getit.NewGit(),
-        getit.NewTar(),
+        getit.NewTAR(),
         getit.NewZIP(),
     },
     []getit.Mapper{
