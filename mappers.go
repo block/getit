@@ -18,7 +18,7 @@ func GitHub(source string) (string, bool) {
 	return "", false
 }
 
-var gitHubOrgRe = regexp.MustCompile(`^([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)([?#].*)`)
+var gitHubOrgRe = regexp.MustCompile(`^([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)([?#].*)?$`)
 
 // GitHubOrgRepo is a [Mapper] that supports shorthand GitHub URLs with org/repo.
 //
@@ -30,7 +30,7 @@ func GitHubOrgRepo(source string) (string, bool) {
 	return "", false
 }
 
-var singleGitHubOrg = regexp.MustCompile(`^([a-zA-Z0-9_-]+)([#?].*)`)
+var singleGitHubOrg = regexp.MustCompile(`^([a-zA-Z0-9_-]+)([#?].*)?$`)
 
 // SingleGitHubOrg is a [Mapper] that supports shorthand GitHub URLs as just repo.
 //

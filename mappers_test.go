@@ -117,8 +117,10 @@ func TestGitHubOrgRepo(t *testing.T) {
 			ok:       true,
 		},
 		{
-			name:   "OrgRepoWithoutQueryOrAnchor",
-			source: "user/repo",
+			name:     "OrgRepoWithoutQueryOrAnchor",
+			source:   "user/repo",
+			expected: "git+https://github.com/user/repo",
+			ok:       true,
 		},
 		{
 			name:   "FullGitHubURL",
@@ -197,9 +199,11 @@ func TestSingleGitHubOrg(t *testing.T) {
 			ok:       true,
 		},
 		{
-			name:   "RepoWithoutQueryOrAnchor",
-			org:    "myorg",
-			source: "myrepo",
+			name:     "RepoWithoutQueryOrAnchor",
+			org:      "myorg",
+			source:   "myrepo",
+			expected: "git+https://github.com/myorg/myrepo",
+			ok:       true,
 		},
 		{
 			name:   "OrgSlashRepo",
