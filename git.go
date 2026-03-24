@@ -1,12 +1,13 @@
 package getit
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/url"
 	"os/exec"
 	"strings"
+
+	"github.com/kballard/go-shellquote"
 )
 
 // The Git [Resolver] uses Git repositories as archive sources, cloning directly.
@@ -43,11 +44,10 @@ func (g *Git) Fetch(ctx context.Context, source Source, dest string) error {
 	repoURL := convertGitURL(source.URL)
 	args = append(args, repoURL, dest)
 
-	stderr := &bytes.Buffer{}
 	cmd := exec.CommandContext(ctx, "git", args...)
-	cmd.Stderr = stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("git clone failed: %w: %s", err, stderr)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		argsStr := shellquote.Join(args...)
+		return fmt.Errorf("git clone failed: git %s: %w: %s", argsStr, err, output)
 	}
 	return nil
 }
