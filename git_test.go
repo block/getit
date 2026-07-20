@@ -98,7 +98,7 @@ func createTestRepo(t *testing.T) (repoDir string, runGit func(args ...string)) 
 		assert.NoError(t, err, "git %v failed: %s", args, output)
 	}
 
-	runGit("init")
+	runGit("init", "--initial-branch=master")
 	runGit("config", "user.email", "test@test.com")
 	runGit("config", "user.name", "Test")
 
