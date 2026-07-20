@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/alecthomas/assert/v2"
 )
@@ -96,7 +98,7 @@ func createTestRepo(t *testing.T) (repoDir string, runGit func(args ...string)) 
 		assert.NoError(t, err, "git %v failed: %s", args, output)
 	}
 
-	runGit("init")
+	runGit("init", "--initial-branch=master")
 	runGit("config", "user.email", "test@test.com")
 	runGit("config", "user.name", "Test")
 
@@ -200,6 +202,34 @@ func TestGitFetchCancelledContext(t *testing.T) {
 	git := NewGit()
 	err = git.Fetch(ctx, Source{URL: u}, dest)
 	assert.Error(t, err)
+}
+
+func TestGitFetchCancelKillsProcessGroup(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("requires sh")
+	}
+
+	// Fake git that spawns a grandchild holding the output pipe open. If
+	// cancellation only kills the direct child, Fetch blocks until the
+	// grandchild exits.
+	binDir := t.TempDir()
+	script := "#!/bin/sh\nsleep 60 &\nwait\n"
+	assert.NoError(t, os.WriteFile(filepath.Join(binDir, "git"), []byte(script), 0o755)) //nolint:gosec
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(200 * time.Millisecond)
+		cancel()
+	}()
+
+	u, err := url.Parse("git+https://example.com/user/repo")
+	assert.NoError(t, err)
+
+	start := time.Now()
+	err = NewGit().Fetch(ctx, Source{URL: u}, t.TempDir())
+	assert.Error(t, err)
+	assert.True(t, time.Since(start) < 5*time.Second, "Fetch blocked on an orphaned grandchild for %s", time.Since(start))
 }
 
 func TestGitFetchInvalidRepo(t *testing.T) {

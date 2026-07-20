@@ -45,6 +45,7 @@ func (g *Git) Fetch(ctx context.Context, source Source, dest string) error {
 	args = append(args, repoURL, dest)
 
 	cmd := exec.CommandContext(ctx, "git", args...)
+	killProcessGroup(cmd)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		argsStr := shellquote.Join(args...)
 		return fmt.Errorf("git clone failed: git %s: %w: %s", argsStr, err, output)
