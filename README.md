@@ -31,4 +31,11 @@ fetcher := getit.New(
 
 // Fetch an archive
 err := fetcher.Fetch(ctx, "user/repo?ref=main&depth=1", "./destination")
+
+// Fetch an archive and the revision fetched, then fetch that revision again later
+revision, err := fetcher.FetchRevision(ctx, "user/repo?ref=main", "./destination")
+pinned, err := fetcher.AtRevision("user/repo?ref=main", revision)
+err = fetcher.Fetch(ctx, pinned, "./again")
 ```
+
+Only git sources support revisions, which are commit hashes. Other sources return `ErrNoRevisions`.

@@ -4,6 +4,7 @@ package getit
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -26,10 +27,33 @@ type Resolver interface {
 	Fetch(ctx context.Context, source Source, dest string) error
 }
 
+// ErrNoRevisions is returned for a source whose resolver is not a
+// [RevisionResolver].
+var ErrNoRevisions = errors.New("source does not support revisions")
+
+// RevisionResolver is a [Resolver] that can fetch a source again exactly as
+// it was.
+type RevisionResolver interface {
+	Resolver
+	// FetchRevision fetches like Fetch and returns the revision fetched.
+	FetchRevision(ctx context.Context, source Source, dest string) (string, error)
+	// AtRevision returns source pinned to a revision returned by FetchRevision.
+	AtRevision(source Source, revision string) Source
+}
+
 // Source is a resolved source with optional sub-directory.
 type Source struct {
 	URL    *url.URL
 	SubDir string
+}
+
+// String returns the source in the form Resolve accepts.
+func (s Source) String() string {
+	u := *s.URL
+	if s.SubDir != "" {
+		u.Path += "//" + s.SubDir
+	}
+	return u.String()
 }
 
 // Fetcher retrieves archives from a pluggable source.
@@ -94,6 +118,47 @@ func (f *Fetcher) Fetch(ctx context.Context, source, dest string) error {
 		return fmt.Errorf("fetching %s: %w", source, err)
 	}
 	return nil
+}
+
+// FetchRevision fetches like Fetch and returns the revision fetched, to pass
+// to AtRevision later.
+//
+// It returns [ErrNoRevisions] if the source's resolver is not a
+// [RevisionResolver].
+func (f *Fetcher) FetchRevision(ctx context.Context, source, dest string) (string, error) {
+	resolver, src, err := f.resolveRevisions(source)
+	if err != nil {
+		return "", err
+	}
+	revision, err := resolver.FetchRevision(ctx, src, dest)
+	if err != nil {
+		return "", fmt.Errorf("fetching %s: %w", source, err)
+	}
+	return revision, nil
+}
+
+// AtRevision returns source pinned to a revision returned by FetchRevision.
+//
+// It returns [ErrNoRevisions] if the source's resolver is not a
+// [RevisionResolver].
+func (f *Fetcher) AtRevision(source, revision string) (string, error) {
+	resolver, src, err := f.resolveRevisions(source)
+	if err != nil {
+		return "", err
+	}
+	return resolver.AtRevision(src, revision).String(), nil
+}
+
+func (f *Fetcher) resolveRevisions(source string) (RevisionResolver, Source, error) {
+	resolver, src, err := f.Resolve(source)
+	if err != nil {
+		return nil, Source{}, err
+	}
+	revisions, ok := resolver.(RevisionResolver)
+	if !ok {
+		return nil, Source{}, fmt.Errorf("%s: %w", source, ErrNoRevisions)
+	}
+	return revisions, src, nil
 }
 
 // FetchIntoPipe retrieves the given URL using Go's HTTP library then pipes it into the input of the given command.

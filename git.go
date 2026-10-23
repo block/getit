@@ -27,9 +27,11 @@ import (
 // A commit is checked out detached and cannot be combined with ref. It needs
 // git 2.49 or later, and a server that allows fetching a commit by hash, such
 // as any server speaking git protocol v2.
+//
+// Git is a [RevisionResolver] whose revisions are commit hashes.
 type Git struct{}
 
-var _ Resolver = (*Git)(nil)
+var _ RevisionResolver = (*Git)(nil)
 
 func NewGit() *Git { return &Git{} }
 
@@ -59,6 +61,32 @@ func (g *Git) Fetch(ctx context.Context, source Source, dest string) error {
 		return fmt.Errorf("git clone failed: git %s: %w: %s", argsStr, err, output)
 	}
 	return nil
+}
+
+// FetchRevision clones like Fetch and returns the commit hash cloned.
+func (g *Git) FetchRevision(ctx context.Context, source Source, dest string) (string, error) {
+	if err := g.Fetch(ctx, source, dest); err != nil {
+		return "", err
+	}
+	cmd := exec.CommandContext(ctx, "git", "-C", dest, "rev-parse", "HEAD")
+	killProcessGroup(cmd)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("git rev-parse failed: %w: %s", err, output)
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+// AtRevision replaces the source's ref with the commit revision, fetching
+// only that commit.
+func (g *Git) AtRevision(source Source, revision string) Source {
+	u := *source.URL
+	query := u.Query()
+	query.Del("ref")
+	query.Set("commit", revision)
+	query.Set("depth", "1")
+	u.RawQuery = query.Encode()
+	return Source{URL: &u, SubDir: source.SubDir}
 }
 
 // convertGitURL converts a getit git URL to a standard git URL.
