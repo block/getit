@@ -245,6 +245,42 @@ func TestGitFetchWithCommitAndRef(t *testing.T) {
 	assert.Contains(t, err.Error(), "cannot be used together")
 }
 
+func TestGitRevisions(t *testing.T) {
+	repoDir, runGit := createTestRepo(t)
+	gitOutput := func(dir string, args ...string) string {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		output, err := cmd.Output()
+		assert.NoError(t, err)
+		return strings.TrimSpace(string(output))
+	}
+	first := gitOutput(repoDir, "rev-parse", "HEAD")
+	assert.NoError(t, os.WriteFile(filepath.Join(repoDir, "file.txt"), []byte("second\n"), 0o644))
+	runGit("add", ".")
+	runGit("commit", "-m", "second")
+
+	// A shallow clone of the ref does not reach the first commit, and git
+	// rejects a ref with a commit.
+	u, err := url.Parse("git+file://" + repoDir + "?ref=master&depth=1")
+	assert.NoError(t, err)
+	source := Source{URL: u}
+	git := NewGit()
+
+	latest := t.TempDir()
+	revision, err := git.FetchRevision(context.Background(), source, latest)
+	assert.NoError(t, err)
+	assert.Equal(t, gitOutput(repoDir, "rev-parse", "HEAD"), revision)
+
+	earlier := t.TempDir()
+	revision, err = git.FetchRevision(context.Background(), git.AtRevision(source, first), earlier)
+	assert.NoError(t, err)
+	assert.Equal(t, first, revision)
+	content, err := os.ReadFile(filepath.Join(earlier, "file.txt"))
+	assert.NoError(t, err)
+	assert.Equal(t, "hello from test\n", string(content))
+}
+
 func TestGitFetchCancelledContext(t *testing.T) {
 	repoDir, _ := createTestRepo(t)
 
