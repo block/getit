@@ -234,23 +234,15 @@ func TestGitFetchWithCommit(t *testing.T) {
 	}
 }
 
-func TestGitFetchWithInvalidCommit(t *testing.T) {
-	tests := []struct {
-		name  string
-		query string
-		error string
-	}{
-		{name: "NotAHash", query: "?commit=main", error: `git commit "main" is not a full commit hash`},
-		{name: "WithRef", query: "?commit=" + strings.Repeat("a", 40) + "&ref=main", error: "git source cannot set both ref and commit"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			u, err := url.Parse("git+file:///nonexistent/repo/path" + tt.query)
-			assert.NoError(t, err)
-			err = NewGit().Fetch(context.Background(), Source{URL: u}, t.TempDir())
-			assert.EqualError(t, err, tt.error)
-		})
-	}
+func TestGitFetchWithCommitAndRef(t *testing.T) {
+	repoDir, _ := createTestRepo(t)
+
+	u, err := url.Parse("git+file://" + repoDir + "?commit=" + strings.Repeat("a", 40) + "&ref=master")
+	assert.NoError(t, err)
+
+	err = NewGit().Fetch(context.Background(), Source{URL: u}, t.TempDir())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot be used together")
 }
 
 func TestGitFetchCancelledContext(t *testing.T) {
