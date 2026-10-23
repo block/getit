@@ -21,7 +21,12 @@ import (
 // All forms support the following query parameters that control cloning behaviour:
 //
 //	ref=<ref>
+//	commit=<commit>
 //	depth=<depth>
+//
+// A commit is checked out detached and cannot be combined with ref. It needs
+// git 2.49 or later, and a server that allows fetching a commit by hash, such
+// as any server speaking git protocol v2.
 type Git struct{}
 
 var _ Resolver = (*Git)(nil)
@@ -39,6 +44,9 @@ func (g *Git) Fetch(ctx context.Context, source Source, dest string) error {
 	}
 	if ref := source.URL.Query().Get("ref"); ref != "" {
 		args = append(args, "--branch", ref)
+	}
+	if commit := source.URL.Query().Get("commit"); commit != "" {
+		args = append(args, "--revision", commit)
 	}
 
 	repoURL := convertGitURL(source.URL)
