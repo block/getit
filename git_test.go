@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -187,6 +188,69 @@ func TestGitFetchWithDepth(t *testing.T) {
 	output, err := cmd.Output()
 	assert.NoError(t, err)
 	assert.Equal(t, "1\n", string(output))
+}
+
+func TestGitFetchWithCommit(t *testing.T) {
+	repoDir, runGit := createTestRepo(t)
+	gitOutput := func(dir string, args ...string) string {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		output, err := cmd.Output()
+		assert.NoError(t, err)
+		return strings.TrimSpace(string(output))
+	}
+
+	for _, content := range []string{"second", "third"} {
+		assert.NoError(t, os.WriteFile(filepath.Join(repoDir, "file.txt"), []byte(content+"\n"), 0o644))
+		runGit("add", ".")
+		runGit("commit", "-m", content)
+	}
+	commit := gitOutput(repoDir, "rev-parse", "HEAD~1")
+
+	tests := []struct {
+		name    string
+		query   string
+		commits string
+	}{
+		{name: "FullHistory", query: "?commit=" + commit, commits: "2"},
+		{name: "Shallow", query: "?commit=" + commit + "&depth=1", commits: "1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			u, err := url.Parse("git+file://" + repoDir + tt.query)
+			assert.NoError(t, err)
+
+			dest := filepath.Join(t.TempDir(), "dest")
+			err = NewGit().Fetch(context.Background(), Source{URL: u}, dest)
+			assert.NoError(t, err)
+
+			content, err := os.ReadFile(filepath.Join(dest, "file.txt"))
+			assert.NoError(t, err)
+			assert.Equal(t, "second\n", string(content))
+			assert.Equal(t, commit, gitOutput(dest, "rev-parse", "HEAD"))
+			assert.Equal(t, tt.commits, gitOutput(dest, "rev-list", "--count", "HEAD"))
+		})
+	}
+}
+
+func TestGitFetchWithInvalidCommit(t *testing.T) {
+	tests := []struct {
+		name  string
+		query string
+		error string
+	}{
+		{name: "NotAHash", query: "?commit=main", error: `git commit "main" is not a full commit hash`},
+		{name: "WithRef", query: "?commit=" + strings.Repeat("a", 40) + "&ref=main", error: "git source cannot set both ref and commit"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			u, err := url.Parse("git+file:///nonexistent/repo/path" + tt.query)
+			assert.NoError(t, err)
+			err = NewGit().Fetch(context.Background(), Source{URL: u}, t.TempDir())
+			assert.EqualError(t, err, tt.error)
+		})
+	}
 }
 
 func TestGitFetchCancelledContext(t *testing.T) {

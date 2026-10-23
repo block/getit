@@ -4,7 +4,7 @@ This is a bit like hashicorp/go-getter, but much simpler, and with less supporte
 
 ## Features
 
-- **Git repositories**: Clone from git://, git+ssh://, or git+https:// URLs with optional ref and depth parameters
+- **Git repositories**: Clone from git://, git+ssh://, or git+https:// URLs with optional ref, commit and depth parameters
 - **TAR archives**: Fetch and extract .tar, .tar.gz, .tar.bz2, .tar.xz, and other compressed tarballs
 - **ZIP archives**: Download and unzip .zip files
 - **GitHub shortcuts**: Map shorthand URLs like `user/repo` or `github.com/user/repo` to full git URLs
