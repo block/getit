@@ -47,15 +47,6 @@ type Source struct {
 	SubDir string
 }
 
-// String returns the source in the form Resolve accepts.
-func (s Source) String() string {
-	u := *s.URL
-	if s.SubDir != "" {
-		u.Path += "//" + s.SubDir
-	}
-	return u.String()
-}
-
 // Fetcher retrieves archives from a pluggable source.
 //
 // All sources support an optional subdirectory, specified via appending a //<subdir> to the URL path:
@@ -146,7 +137,16 @@ func (f *Fetcher) AtRevision(source, revision string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return resolver.AtRevision(src, revision).String(), nil
+	return sourceString(resolver.AtRevision(src, revision)), nil
+}
+
+// sourceString returns source in the form Resolve accepts.
+func sourceString(source Source) string {
+	u := *source.URL
+	if source.SubDir != "" {
+		u.Path += "//" + source.SubDir
+	}
+	return u.String()
 }
 
 func (f *Fetcher) resolveRevisions(source string) (RevisionResolver, Source, error) {
